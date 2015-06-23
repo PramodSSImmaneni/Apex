@@ -54,6 +54,7 @@ import com.datatorrent.stram.client.StramClientUtils;
 import com.datatorrent.stram.engine.StreamingContainer;
 import com.datatorrent.stram.plan.logical.LogicalPlan;
 import com.datatorrent.stram.plan.physical.PTOperator;
+import com.datatorrent.stram.security.BufferServerTokenIdentifier;
 import com.datatorrent.stram.security.StramDelegationTokenIdentifier;
 import com.datatorrent.stram.security.StramDelegationTokenManager;
 
@@ -311,12 +312,12 @@ public class LaunchContainerRunnable implements Runnable
       String service = heartbeatAddress.getAddress().getHostAddress() + ":" + heartbeatAddress.getPort();
       Token<StramDelegationTokenIdentifier> stramToken = new Token<StramDelegationTokenIdentifier>(identifier, delegationTokenManager);
       stramToken.setService(new Text(service));
-      return getTokens(ugi, stramToken);
+      return getTokens(ugi, stramToken, null);
     }
     return null;
   }
 
-  public static ByteBuffer getTokens(UserGroupInformation ugi, Token<StramDelegationTokenIdentifier> delegationToken)
+  public static ByteBuffer getTokens(UserGroupInformation ugi, Token<StramDelegationTokenIdentifier> delegationToken, Token<BufferServerTokenIdentifier> bufferServerToken)
   {
     try {
       Collection<Token<? extends TokenIdentifier>> tokens = ugi.getTokens();
@@ -328,6 +329,7 @@ public class LaunchContainerRunnable implements Runnable
         }
       }
       credentials.addToken(delegationToken.getService(), delegationToken);
+      credentials.addToken(bufferServerToken.getService(), bufferServerToken);
       DataOutputBuffer dataOutput = new DataOutputBuffer();
       credentials.writeTokenStorageToStream(dataOutput);
       byte[] tokenBytes = dataOutput.getData();

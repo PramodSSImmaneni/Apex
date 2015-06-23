@@ -19,7 +19,6 @@
 */
 package com.datatorrent.stram;
 
-import com.datatorrent.stram.api.AppDataSource;
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -71,6 +70,7 @@ import com.datatorrent.api.DAG;
 import com.datatorrent.api.StringCodec;
 
 import com.datatorrent.stram.StreamingContainerManager.ContainerResource;
+import com.datatorrent.stram.api.AppDataSource;
 import com.datatorrent.stram.api.BaseContext;
 import com.datatorrent.stram.api.StramEvent;
 import com.datatorrent.stram.appdata.AppDataPushAgent;
@@ -80,10 +80,7 @@ import com.datatorrent.stram.plan.logical.LogicalPlan;
 import com.datatorrent.stram.plan.physical.OperatorStatus.PortStatus;
 import com.datatorrent.stram.plan.physical.PTContainer;
 import com.datatorrent.stram.plan.physical.PTOperator;
-import com.datatorrent.stram.security.StramDelegationTokenIdentifier;
-import com.datatorrent.stram.security.StramDelegationTokenManager;
-import com.datatorrent.stram.security.StramUserLogin;
-import com.datatorrent.stram.security.StramWSFilterInitializer;
+import com.datatorrent.stram.security.*;
 import com.datatorrent.stram.webapp.AppInfo;
 import com.datatorrent.stram.webapp.StramWebApp;
 
@@ -129,6 +126,7 @@ public class StreamingAppMasterService extends CompositeService
   private final ClusterAppStats stats = new ClusterAppStats();
   private StramDelegationTokenManager delegationTokenManager = null;
   private AppDataPushAgent appDataPushAgent;
+  private BufferServerTokenManager bufferServerTokenManager = null;
 
   public StreamingAppMasterService(ApplicationAttemptId appAttemptID)
   {
@@ -480,6 +478,7 @@ public class StreamingAppMasterService extends CompositeService
     if (UserGroupInformation.isSecurityEnabled()) {
       // TODO :- Need to perform token renewal
       delegationTokenManager = new StramDelegationTokenManager(DELEGATION_KEY_UPDATE_INTERVAL, DELEGATION_TOKEN_MAX_LIFETIME, DELEGATION_TOKEN_RENEW_INTERVAL, DELEGATION_TOKEN_REMOVER_SCAN_INTERVAL);
+      bufferServerTokenManager = new BufferServerTokenManager(DELEGATION_KEY_UPDATE_INTERVAL, DELEGATION_TOKEN_MAX_LIFETIME, DELEGATION_TOKEN_RENEW_INTERVAL, DELEGATION_TOKEN_REMOVER_SCAN_INTERVAL);
     }
     this.nmClient = new NMClientAsyncImpl(new NMCallbackHandler());
     addService(nmClient);
@@ -504,8 +503,9 @@ public class StreamingAppMasterService extends CompositeService
   protected void serviceStart() throws Exception
   {
     super.serviceStart();
-    if (delegationTokenManager != null) {
+    if (UserGroupInformation.isSecurityEnabled()) {
       delegationTokenManager.startThreads();
+      bufferServerTokenManager.startThreads();
     }
 
     // write the connect address for containers to DFS
@@ -543,7 +543,8 @@ public class StreamingAppMasterService extends CompositeService
   protected void serviceStop() throws Exception
   {
     super.serviceStop();
-    if (delegationTokenManager != null) {
+    if (UserGroupInformation.isSecurityEnabled()) {
+      bufferServerTokenManager.stopThreads();
       delegationTokenManager.stopThreads();
     }
     if (nmClient != null) {
@@ -789,7 +790,8 @@ public class StreamingAppMasterService extends CompositeService
             Token<StramDelegationTokenIdentifier> delegationToken = allocateDelegationToken(ugi.getUserName(), heartbeatListener.getAddress());
             allocatedContainerHolder.delegationToken = delegationToken;
             //ByteBuffer tokens = LaunchContainerRunnable.getTokens(delegationTokenManager, heartbeatListener.getAddress());
-            tokens = LaunchContainerRunnable.getTokens(ugi, delegationToken);
+            Token<BufferServerTokenIdentifier> bufferServerToken = allocateBufferServerToken(ugi.getUserName(), heartbeatListener.getAddress());
+            tokens = LaunchContainerRunnable.getTokens(ugi, delegationToken, bufferServerToken);
           }
           LaunchContainerRunnable launchContainer = new LaunchContainerRunnable(allocatedContainer, nmClient, sca, tokens);
           // Thread launchThread = new Thread(runnableLaunchContainer);
@@ -904,6 +906,15 @@ public class StreamingAppMasterService extends CompositeService
     Token<StramDelegationTokenIdentifier> stramToken = new Token<StramDelegationTokenIdentifier>(identifier, delegationTokenManager);
     stramToken.setService(new Text(service));
     return stramToken;
+  }
+
+  private Token<BufferServerTokenIdentifier> allocateBufferServerToken(String username, InetSocketAddress address)
+  {
+    BufferServerTokenIdentifier identifier = new BufferServerTokenIdentifier(new Text(username), new Text(""), new Text(""));
+    String service = address.getAddress().getHostAddress() + ":" + address.getPort();
+    Token<BufferServerTokenIdentifier> bufferServerToken = new Token<BufferServerTokenIdentifier>(identifier, bufferServerTokenManager);
+    bufferServerToken.setService(new Text(service));
+    return bufferServerToken;
   }
 
   /**

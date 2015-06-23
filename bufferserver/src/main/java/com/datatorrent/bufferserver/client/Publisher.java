@@ -31,6 +31,8 @@ public abstract class Publisher extends AbstractLengthPrependerClient
 {
   private final String id;
 
+  private byte[] token;
+
   public Publisher(String id)
   {
     this(id, 1024);
@@ -48,7 +50,20 @@ public abstract class Publisher extends AbstractLengthPrependerClient
    */
   public void activate(String version, long windowId)
   {
+    if (token != null) {
+      write(token);
+    }
     write(PublishRequestTuple.getSerializedRequest(version, id, windowId));
+  }
+
+  public byte[] getToken()
+  {
+    return token;
+  }
+
+  public void setToken(byte[] token)
+  {
+    this.token = token;
   }
 
   @Override
