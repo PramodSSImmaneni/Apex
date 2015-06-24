@@ -31,6 +31,7 @@ import java.util.concurrent.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.datatorrent.bufferserver.client.AuthClient;
 import com.datatorrent.bufferserver.internal.DataList;
 import com.datatorrent.bufferserver.internal.FastDataList;
 import com.datatorrent.bufferserver.internal.LogicalNode;
@@ -61,7 +62,7 @@ public class Server implements ServerListener
   private final ExecutorService serverHelperExecutor;
   private final ExecutorService storageHelperExecutor;
 
-  private byte[] token;
+  private byte[] authToken;
 
   /**
    * @param port - port number to bind to or 0 to auto select a free port
@@ -124,9 +125,9 @@ public class Server implements ServerListener
     return address;
   }
 
-  public void setToken(byte[] token)
+  public void setAuthToken(byte[] authToken)
   {
-    this.token = token;
+    this.authToken = authToken;
   }
 
   /**
@@ -329,7 +330,9 @@ public class Server implements ServerListener
   @Override
   public ClientListener getClientConnection(SocketChannel sc, ServerSocketChannel ssc)
   {
-    return new UnidentifiedClient(sc);
+    UnidentifiedClient client = new UnidentifiedClient(sc);
+    client.setToken(authToken);
+    return client;
   }
 
   @Override
@@ -342,37 +345,7 @@ public class Server implements ServerListener
     throw new RuntimeException(cce);
   }
 
-  abstract class AuthenticateClient extends AbstractLengthPrependerClient
-  {
-
-    boolean authenticated = false;
-
-    @Override
-    public void onMessage(byte[] buffer, int offset, int size)
-    {
-      if ((token != null) && !authenticated) {
-        if ((size - offset) == token.length) {
-          int match = 0;
-          while ((match < token.length) && (buffer[offset + match] == token[match])) {
-            ++match;
-          }
-          if (match == token.length) {
-            authenticated = true;
-          }
-        }
-        if (!authenticated) {
-          throw new RuntimeException("Authentication failure");
-        }
-      } else {
-        onAuthMessage(buffer, offset, size);
-      }
-    }
-
-    protected abstract void onAuthMessage(byte[] buffer, int offset, int size);
-
-  }
-
-  class UnidentifiedClient extends AuthenticateClient
+  class UnidentifiedClient extends AuthClient
   {
     SocketChannel channel;
     boolean ignore;

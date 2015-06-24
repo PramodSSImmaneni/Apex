@@ -15,13 +15,14 @@
  */
 package com.datatorrent.bufferserver.support;
 
-import com.datatorrent.bufferserver.packet.Tuple;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.datatorrent.bufferserver.packet.Tuple;
 
 /**
  *
@@ -47,7 +48,7 @@ public class Subscriber extends com.datatorrent.bufferserver.client.Subscriber
   }
 
   @Override
-  public void onMessage(byte[] buffer, int offset, int size)
+  public void onAuthMessage(byte[] buffer, int offset, int size)
   {
     Tuple tuple = Tuple.getTuple(buffer, offset, size);
     tupleCount.incrementAndGet();

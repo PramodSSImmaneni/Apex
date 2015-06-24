@@ -15,6 +15,16 @@
  */
 package com.datatorrent.bufferserver.server;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.testng.Assert;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
+
 import com.datatorrent.bufferserver.packet.BeginWindowTuple;
 import com.datatorrent.bufferserver.packet.EndWindowTuple;
 import com.datatorrent.bufferserver.packet.PayloadTuple;
@@ -24,16 +34,8 @@ import com.datatorrent.bufferserver.support.Publisher;
 import com.datatorrent.bufferserver.support.Subscriber;
 import com.datatorrent.netlet.DefaultEventLoop;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.testng.Assert;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
 
 /**
  *
@@ -49,6 +51,8 @@ public class ServerTest
   static DefaultEventLoop eventloopServer;
   static DefaultEventLoop eventloopClient;
 
+  static byte[] authToken = "Babababu".getBytes();
+
   @BeforeClass
   public static void setupServerAndClients() throws Exception
   {
@@ -63,6 +67,7 @@ public class ServerTest
     eventloopClient.start();
 
     instance = new Server(0, 4096,8);
+    //instance.setAuthToken(authToken);
     address = instance.run(eventloopServer);
     assert (address instanceof InetSocketAddress);
   }
@@ -78,9 +83,11 @@ public class ServerTest
   public void testNoPublishNoSubscribe() throws InterruptedException
   {
     bsp = new Publisher("MyPublisher");
+    //bsp.setToken(authToken);
     eventloopClient.connect(address.isUnresolved() ? new InetSocketAddress(address.getHostName(), address.getPort()) : address, bsp);
 
     bss = new Subscriber("MySubscriber");
+    //bss.setToken(authToken);
     eventloopClient.connect(address.isUnresolved() ? new InetSocketAddress(address.getHostName(), address.getPort()) : address, bss);
 
     bsp.activate(null, 0L);
@@ -101,9 +108,11 @@ public class ServerTest
   public void test1Window() throws InterruptedException
   {
     bsp = new Publisher("MyPublisher");
+    //bsp.setToken(authToken);
     eventloopClient.connect(address.isUnresolved() ? new InetSocketAddress(address.getHostName(), address.getPort()) : address, bsp);
 
     bss = new Subscriber("MyPublisher");
+    //bss.setToken(authToken);
     eventloopClient.connect(address.isUnresolved() ? new InetSocketAddress(address.getHostName(), address.getPort()) : address, bss);
 
     bsp.activate(null, 0L);
@@ -133,6 +142,7 @@ public class ServerTest
   public void testLateSubscriber() throws InterruptedException
   {
     bss = new Subscriber("MyPublisher");
+    //bss.setToken(authToken);
     eventloopClient.connect(address.isUnresolved() ? new InetSocketAddress(address.getHostName(), address.getPort()) : address, bss);
 
     bss.activate(null, "BufferServerOutput/BufferServerSubscriber", "MyPublisher", 0, null, 0L, 0);
@@ -156,10 +166,12 @@ public class ServerTest
   public void testATonOfData() throws InterruptedException
   {
     bss = new Subscriber("MyPublisher");
+    //bss.setToken(authToken);
     eventloopClient.connect(address.isUnresolved() ? new InetSocketAddress(address.getHostName(), address.getPort()) : address, bss);
     bss.activate(null, "BufferServerOutput/BufferServerSubscriber", "MyPublisher", 0, null, 0L, 0);
 
     bsp = new Publisher("MyPublisher");
+    //bsp.setToken(authToken);
     eventloopClient.connect(address.isUnresolved() ? new InetSocketAddress(address.getHostName(), address.getPort()) : address, bsp);
     bsp.activate(null, 0x7afebabe, 0);
 
@@ -207,6 +219,7 @@ public class ServerTest
   {
 
     bsc = new Controller("MyController");
+    //bsc.setToken(authToken);
     eventloopClient.connect(address.isUnresolved() ? new InetSocketAddress(address.getHostName(), address.getPort()) : address, bsc);
 
     bsc.purge(null, "MyPublisher", 0);
@@ -221,6 +234,7 @@ public class ServerTest
     assertNotNull(bsc.data);
 
     bss = new Subscriber("MyPublisher");
+    //bss.setToken(authToken);
     eventloopClient.connect(address.isUnresolved() ? new InetSocketAddress(address.getHostName(), address.getPort()) : address, bss);
     bss.activate(null, "BufferServerOutput/BufferServerSubscriber", "MyPublisher", 0, null, 0L, 0);
     for (int i = 0; i < spinCount; i++) {
@@ -239,6 +253,7 @@ public class ServerTest
   public void testPurgeSome() throws InterruptedException
   {
     bsc = new Controller("MyController");
+    //bsc.setToken(authToken);
     eventloopClient.connect(address.isUnresolved() ? new InetSocketAddress(address.getHostName(), address.getPort()) : address, bsc);
 
     bsc.purge(null, "MyPublisher", 0x7afebabe00000000L);
@@ -253,6 +268,7 @@ public class ServerTest
     assertNotNull(bsc.data);
 
     bss = new Subscriber("MyPublisher");
+    //bss.setToken(authToken);
     eventloopClient.connect(address.isUnresolved() ? new InetSocketAddress(address.getHostName(), address.getPort()) : address, bss);
     bss.activate(null, "BufferServerOutput/BufferServerSubscriber", "MyPublisher", 0, null, 0L, 0);
     for (int i = 0; i < spinCount; i++) {
@@ -270,6 +286,7 @@ public class ServerTest
   public void testPurgeAll() throws InterruptedException
   {
     bsc = new Controller("MyController");
+    //bsc.setToken(authToken);
     eventloopClient.connect(address.isUnresolved() ? new InetSocketAddress(address.getHostName(), address.getPort()) : address, bsc);
 
     bsc.purge(null, "MyPublisher", 0x7afebabe00000001L);
@@ -284,6 +301,7 @@ public class ServerTest
     assertNotNull(bsc.data);
 
     bss = new Subscriber("MyPublisher");
+    //bss.setToken(authToken);
     eventloopClient.connect(address.isUnresolved() ? new InetSocketAddress(address.getHostName(), address.getPort()) : address, bss);
 
     bss.activate(null, "BufferServerOutput/BufferServerSubscriber", "MyPublisher", 0, null, 0L, 0);
@@ -309,6 +327,7 @@ public class ServerTest
   public void testReblishLowerWindow() throws InterruptedException
   {
     bsp = new Publisher("MyPublisher");
+    //bsp.setToken(authToken);
     eventloopClient.connect(address.isUnresolved() ? new InetSocketAddress(address.getHostName(), address.getPort()) : address, bsp);
 
     bsp.activate(null, 10, 0);
@@ -340,6 +359,7 @@ public class ServerTest
     eventloopClient.disconnect(bsp);
 
     bss = new Subscriber("MyPublisher");
+    //bss.setToken(authToken);
     eventloopClient.connect(address.isUnresolved() ? new InetSocketAddress(address.getHostName(), address.getPort()) : address, bss);
 
     bss.activate(null, "BufferServerOutput/BufferServerSubscriber", "MyPublisher", 0, null, 0L, 0);
@@ -361,6 +381,7 @@ public class ServerTest
   public void testReset() throws InterruptedException
   {
     bsc = new Controller("MyController");
+    //bsc.setToken(authToken);
     eventloopClient.connect(address.isUnresolved() ? new InetSocketAddress(address.getHostName(), address.getPort()) : address, bsc);
 
     bsc.reset(null, "MyPublisher", 0x7afebabe00000001L);
@@ -375,6 +396,7 @@ public class ServerTest
     assertNotNull(bsc.data);
 
     bss = new Subscriber("MySubscriber");
+    //bss.setToken(authToken);
     eventloopClient.connect(address.isUnresolved() ? new InetSocketAddress(address.getHostName(), address.getPort()) : address, bss);
 
     bss.activate(null, "BufferServerOutput/BufferServerSubscriber", "MyPublisher", 0, null, 0L, 0);
@@ -407,12 +429,14 @@ public class ServerTest
   public void testEarlySubscriberForLaterWindow() throws InterruptedException
   {
     bss = new Subscriber("MyPublisher");
+    //bss.setToken(authToken);
     eventloopClient.connect(address.isUnresolved() ? new InetSocketAddress(address.getHostName(), address.getPort()) : address, bss);
     bss.activate(null, "BufferServerOutput/BufferServerSubscriber", "MyPublisher", 0, null, 49L, 0);
 
     /* wait in a hope that the subscriber is able to reach the server */
     Thread.sleep(100);
     bsp = new Publisher("MyPublisher");
+    //bsp.setToken(authToken);
     eventloopClient.connect(address.isUnresolved() ? new InetSocketAddress(address.getHostName(), address.getPort()) : address, bsp);
 
 

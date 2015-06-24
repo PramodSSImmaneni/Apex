@@ -31,7 +31,7 @@ import com.datatorrent.netlet.util.Slice;
 *
  * @since 0.3.2
  */
-public abstract class Controller extends AbstractLengthPrependerClient
+public abstract class Controller extends AuthClient
 {
   String id;
 
@@ -39,6 +39,7 @@ public abstract class Controller extends AbstractLengthPrependerClient
   {
     super(1024, 1024);
     this.id = id;
+    this.initiator = true;
   }
 
   public void purge(String version, String sourceId, long windowId)
@@ -54,7 +55,7 @@ public abstract class Controller extends AbstractLengthPrependerClient
   }
 
   @Override
-  public void onMessage(byte[] buffer, int offset, int size)
+  public void onAuthMessage(byte[] buffer, int offset, int size)
   {
     Tuple t = Tuple.getTuple(buffer, offset, size);
     assert (t.getType() == MessageType.PAYLOAD);

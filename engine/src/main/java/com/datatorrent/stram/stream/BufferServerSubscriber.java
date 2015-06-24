@@ -93,7 +93,7 @@ public class BufferServerSubscriber extends Subscriber implements ByteCounterStr
   }
 
   @Override
-  public void onMessage(byte[] buffer, int offset, int length)
+  public void onAuthMessage(byte[] buffer, int offset, int length)
   {
     Slice f;
     if (freeFragments.isEmpty()) {
