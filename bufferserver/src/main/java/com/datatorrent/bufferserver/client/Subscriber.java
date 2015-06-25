@@ -41,11 +41,11 @@ public abstract class Subscriber extends AuthClient
   {
     super(64 * 1024, 1024);
     this.id = id;
-    this.initiator = true;
   }
 
   public void activate(String version, String type, String sourceId, int mask, Collection<Integer> partitions, long windowId, int bufferSize)
   {
+    checkAuthenticate();
     write(SubscribeRequestTuple.getSerializedRequest(
             version,
             id,

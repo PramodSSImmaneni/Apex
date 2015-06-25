@@ -3,19 +3,11 @@ package com.datatorrent.bufferserver.client;
 import com.datatorrent.netlet.AbstractLengthPrependerClient;
 
 /**
- * This is a client that can be used for authentication between two peers.
- * Currently the authentication is one sided from the initiator to the non-initiator.
- * It can be enhanced to do mutual authentication.
- *
- * @author Pramod Immaneni <pramod@datatorrent.com>
+ * Created by pramod on 6/25/15.
  */
 public abstract class AuthClient extends AbstractLengthPrependerClient
 {
-
   private byte[] token;
-  protected boolean initiator;
-
-  private boolean authenticated = false;
 
   public AuthClient()
   {
@@ -31,60 +23,14 @@ public abstract class AuthClient extends AbstractLengthPrependerClient
     super(readbuffer, position, sendBufferSize);
   }
 
-  @Override
-  public void onMessage(byte[] buffer, int offset, int size)
-  {
-    if ((token != null) && !initiator && !authenticated)
-    {
-      if (size == token.length) {
-        int match = 0;
-        while ((match < token.length) && (buffer[offset + match] == token[match])) {
-          ++match;
-        }
-        if (match == token.length) {
-          authenticated = true;
-        }
-      }
-      if (!authenticated) {
-        throw new RuntimeException("Authentication failure");
-      }
-    } else {
-      onAuthMessage(buffer, offset, size);
+  protected void checkAuthenticate() {
+    if (token != null) {
+      write(token);
     }
   }
-
-  @Override
-  public boolean write(byte[] message1, byte[] message2)
-  {
-    checkAuthenticated();
-    return super.write(message1, message2);
-  }
-
-  @Override
-  public boolean write(byte[] message, int offset, int size)
-  {
-    checkAuthenticated();
-    return super.write(message, offset, size);
-  }
-
-  private void checkAuthenticated()
-  {
-    if ((token != null) && initiator && !authenticated) {
-      super.write(token, 0, token.length);
-      authenticated = true;
-    }
-  }
-
-  protected abstract void onAuthMessage(byte[] buffer, int offset, int size);
 
   public void setToken(byte[] token)
   {
     this.token = token;
   }
-
-  public boolean isInitiator()
-  {
-    return initiator;
-  }
-
 }

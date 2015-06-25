@@ -157,7 +157,7 @@ public class BufferServerPublisher extends Publisher implements ByteCounterStrea
   }
 
   @Override
-  public void onAuthMessage(byte[] buffer, int offset, int size)
+  public void onMessage(byte[] buffer, int offset, int size)
   {
     throw new RuntimeException("OutputStream is not supposed to receive anything!");
   }

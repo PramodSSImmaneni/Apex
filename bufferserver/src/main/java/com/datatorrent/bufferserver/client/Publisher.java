@@ -39,7 +39,6 @@ public abstract class Publisher extends AuthClient
   {
     super(1024, sendBufferCapacity);
     this.id = id;
-    this.initiator = true;
   }
 
   /**
@@ -48,6 +47,7 @@ public abstract class Publisher extends AuthClient
    */
   public void activate(String version, long windowId)
   {
+    checkAuthenticate();
     write(PublishRequestTuple.getSerializedRequest(version, id, windowId));
   }
 

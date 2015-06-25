@@ -39,23 +39,24 @@ public abstract class Controller extends AuthClient
   {
     super(1024, 1024);
     this.id = id;
-    this.initiator = true;
   }
 
   public void purge(String version, String sourceId, long windowId)
   {
+    checkAuthenticate();
     write(PurgeRequestTuple.getSerializedRequest(version, sourceId, windowId));
     logger.debug("Sent purge request sourceId = {}, windowId = {}", sourceId, Codec.getStringWindowId(windowId));
   }
 
   public void reset(String version, String sourceId, long windowId)
   {
+    checkAuthenticate();
     write(ResetRequestTuple.getSerializedRequest(version, sourceId, windowId));
     logger.debug("Sent reset request sourceId = {}, windowId = {}", sourceId, Codec.getStringWindowId(windowId));
   }
 
   @Override
-  public void onAuthMessage(byte[] buffer, int offset, int size)
+  public void onMessage(byte[] buffer, int offset, int size)
   {
     Tuple t = Tuple.getTuple(buffer, offset, size);
     assert (t.getType() == MessageType.PAYLOAD);
