@@ -48,7 +48,7 @@ public class Subscriber extends com.datatorrent.bufferserver.client.Subscriber
   }
 
   @Override
-  public void onAuthMessage(byte[] buffer, int offset, int size)
+  public void onMessage(byte[] buffer, int offset, int size)
   {
     Tuple tuple = Tuple.getTuple(buffer, offset, size);
     tupleCount.incrementAndGet();

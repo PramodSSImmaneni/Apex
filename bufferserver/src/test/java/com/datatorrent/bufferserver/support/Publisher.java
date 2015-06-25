@@ -36,7 +36,7 @@ public class Publisher extends com.datatorrent.bufferserver.client.Publisher
   }
 
   @Override
-  public void onAuthMessage(byte[] buffer, int offset, int size)
+  public void onMessage(byte[] buffer, int offset, int size)
   {
     logger.warn("received data when unexpected {}", Arrays.toString(Arrays.copyOfRange(buffer, offset, size)));
   }
