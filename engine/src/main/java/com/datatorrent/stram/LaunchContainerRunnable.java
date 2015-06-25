@@ -317,7 +317,6 @@ public class LaunchContainerRunnable implements Runnable
     return null;
   }
 
-  //public static ByteBuffer getTokens(UserGroupInformation ugi, Token<StramDelegationTokenIdentifier> delegationToken, Token<BufferServerTokenIdentifier> bufferServerToken)
   public static ByteBuffer getTokens(UserGroupInformation ugi, Token<StramDelegationTokenIdentifier> delegationToken)
   {
     try {

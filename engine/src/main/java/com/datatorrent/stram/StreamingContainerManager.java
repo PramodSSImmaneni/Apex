@@ -20,6 +20,7 @@ import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
+import java.security.SecureRandom;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -133,6 +134,7 @@ public class StreamingContainerManager implements PlanContext
   public final static Recoverable SET_OPERATOR_PROPERTY = new SetOperatorProperty();
   public final static Recoverable SET_PHYSICAL_OPERATOR_PROPERTY = new SetPhysicalOperatorProperty();
   public final static int METRIC_QUEUE_SIZE = 1000;
+  private final static int BUFFER_SERVER_TOKEN_LENGTH = 20;
 
   private final FinalVars vars;
   private final PhysicalPlan plan;
@@ -173,7 +175,7 @@ public class StreamingContainerManager implements PlanContext
   private List<AppDataSource> appDataSources = null;
   private final Cache<Long, Object> commandResponse = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.MINUTES).build();
   private long lastLatencyWarningTime;
-  private Random tokenGenerator = new Random();
+  private SecureRandom bufferServerTokenGenerator = new SecureRandom();
 
   //logic operator name to a queue of logical customMetrics. this gets cleared periodically
   private final Map<String, Queue<Pair<Long, Map<String, Object>>>> logicalMetrics = Maps.newConcurrentMap();
@@ -206,10 +208,6 @@ public class StreamingContainerManager implements PlanContext
   private final ConcurrentMap<Integer, FSJsonLineFile> operatorFiles = Maps.newConcurrentMap();
 
   private final long startTime = System.currentTimeMillis();
-
-  {
-    tokenGenerator.setSeed(startTime);
-  }
 
   private static class EndWindowStats
   {
@@ -1209,8 +1207,8 @@ public class StreamingContainerManager implements PlanContext
     container.host = resource.host;
     container.bufferServerAddress = bufferServerAddr;
     if (UserGroupInformation.isSecurityEnabled()) {
-      byte[] token = new byte[20];
-      tokenGenerator.nextBytes(token);
+      byte[] token = new byte[BUFFER_SERVER_TOKEN_LENGTH];
+      bufferServerTokenGenerator.nextBytes(token);
       container.setBufferServerToken(token);
     }
     container.nodeHttpAddress = resource.nodeHttpAddress;

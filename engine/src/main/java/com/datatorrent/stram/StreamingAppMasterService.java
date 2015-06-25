@@ -481,7 +481,6 @@ public class StreamingAppMasterService extends CompositeService
     if (UserGroupInformation.isSecurityEnabled()) {
       // TODO :- Need to perform token renewal
       delegationTokenManager = new StramDelegationTokenManager(DELEGATION_KEY_UPDATE_INTERVAL, DELEGATION_TOKEN_MAX_LIFETIME, DELEGATION_TOKEN_RENEW_INTERVAL, DELEGATION_TOKEN_REMOVER_SCAN_INTERVAL);
-      bufferServerTokenManager = new BufferServerTokenManager(DELEGATION_KEY_UPDATE_INTERVAL, DELEGATION_TOKEN_MAX_LIFETIME, DELEGATION_TOKEN_RENEW_INTERVAL, DELEGATION_TOKEN_REMOVER_SCAN_INTERVAL);
     }
     this.nmClient = new NMClientAsyncImpl(new NMCallbackHandler());
     addService(nmClient);
@@ -508,7 +507,6 @@ public class StreamingAppMasterService extends CompositeService
     super.serviceStart();
     if (UserGroupInformation.isSecurityEnabled()) {
       delegationTokenManager.startThreads();
-      bufferServerTokenManager.startThreads();
     }
 
     // write the connect address for containers to DFS
@@ -547,7 +545,6 @@ public class StreamingAppMasterService extends CompositeService
   {
     super.serviceStop();
     if (UserGroupInformation.isSecurityEnabled()) {
-      bufferServerTokenManager.stopThreads();
       delegationTokenManager.stopThreads();
     }
     if (nmClient != null) {
@@ -793,8 +790,6 @@ public class StreamingAppMasterService extends CompositeService
             Token<StramDelegationTokenIdentifier> delegationToken = allocateDelegationToken(ugi.getUserName(), heartbeatListener.getAddress());
             allocatedContainerHolder.delegationToken = delegationToken;
             //ByteBuffer tokens = LaunchContainerRunnable.getTokens(delegationTokenManager, heartbeatListener.getAddress());
-            //Token<BufferServerTokenIdentifier> bufferServerToken = allocateBufferServerToken(ugi.getUserName(), heartbeatListener.getAddress());
-            //tokens = LaunchContainerRunnable.getTokens(ugi, delegationToken, bufferServerToken);
             tokens = LaunchContainerRunnable.getTokens(ugi, delegationToken);
           }
           LaunchContainerRunnable launchContainer = new LaunchContainerRunnable(allocatedContainer, nmClient, sca, tokens);
@@ -911,17 +906,6 @@ public class StreamingAppMasterService extends CompositeService
     stramToken.setService(new Text(service));
     return stramToken;
   }
-
-  /*
-  private Token<BufferServerTokenIdentifier> allocateBufferServerToken(String username, InetSocketAddress address)
-  {
-    BufferServerTokenIdentifier identifier = new BufferServerTokenIdentifier(new Text(username), new Text(""), new Text(""));
-    String service = address.getAddress().getHostAddress() + ":" + address.getPort();
-    Token<BufferServerTokenIdentifier> bufferServerToken = new Token<BufferServerTokenIdentifier>(identifier, bufferServerTokenManager);
-    bufferServerToken.setService(new Text(service));
-    return bufferServerToken;
-  }
-  */
 
   /**
    * Check for containers that were allocated in a previous attempt.

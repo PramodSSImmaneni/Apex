@@ -4,7 +4,7 @@ import com.datatorrent.netlet.AbstractLengthPrependerClient;
 
 /**
  * This is a client that can be used for authentication between two peers.
- * Currently the authentication is one way from the initiator to the non-initiator.
+ * Currently the authentication is one sided from the initiator to the non-initiator.
  * It can be enhanced to do mutual authentication.
  *
  * @author Pramod Immaneni <pramod@datatorrent.com>
@@ -72,12 +72,6 @@ public abstract class AuthClient extends AbstractLengthPrependerClient
     if ((token != null) && initiator && !authenticated) {
       super.write(token, 0, token.length);
       authenticated = true;
-    }
-  }
-
-  private void printHex(byte[] ba) {
-    for (byte b : ba) {
-      System.out.print(Integer.toHexString(b));
     }
   }
 
