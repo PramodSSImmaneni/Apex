@@ -80,7 +80,10 @@ import com.datatorrent.stram.plan.logical.LogicalPlan;
 import com.datatorrent.stram.plan.physical.OperatorStatus.PortStatus;
 import com.datatorrent.stram.plan.physical.PTContainer;
 import com.datatorrent.stram.plan.physical.PTOperator;
-import com.datatorrent.stram.security.*;
+import com.datatorrent.stram.security.BufferServerTokenManager;
+import com.datatorrent.stram.security.StramDelegationTokenIdentifier;
+import com.datatorrent.stram.security.StramDelegationTokenManager;
+import com.datatorrent.stram.security.StramWSFilterInitializer;
 import com.datatorrent.stram.webapp.AppInfo;
 import com.datatorrent.stram.webapp.StramWebApp;
 
@@ -790,8 +793,9 @@ public class StreamingAppMasterService extends CompositeService
             Token<StramDelegationTokenIdentifier> delegationToken = allocateDelegationToken(ugi.getUserName(), heartbeatListener.getAddress());
             allocatedContainerHolder.delegationToken = delegationToken;
             //ByteBuffer tokens = LaunchContainerRunnable.getTokens(delegationTokenManager, heartbeatListener.getAddress());
-            Token<BufferServerTokenIdentifier> bufferServerToken = allocateBufferServerToken(ugi.getUserName(), heartbeatListener.getAddress());
-            tokens = LaunchContainerRunnable.getTokens(ugi, delegationToken, bufferServerToken);
+            //Token<BufferServerTokenIdentifier> bufferServerToken = allocateBufferServerToken(ugi.getUserName(), heartbeatListener.getAddress());
+            //tokens = LaunchContainerRunnable.getTokens(ugi, delegationToken, bufferServerToken);
+            tokens = LaunchContainerRunnable.getTokens(ugi, delegationToken);
           }
           LaunchContainerRunnable launchContainer = new LaunchContainerRunnable(allocatedContainer, nmClient, sca, tokens);
           // Thread launchThread = new Thread(runnableLaunchContainer);
@@ -908,6 +912,7 @@ public class StreamingAppMasterService extends CompositeService
     return stramToken;
   }
 
+  /*
   private Token<BufferServerTokenIdentifier> allocateBufferServerToken(String username, InetSocketAddress address)
   {
     BufferServerTokenIdentifier identifier = new BufferServerTokenIdentifier(new Text(username), new Text(""), new Text(""));
@@ -916,6 +921,7 @@ public class StreamingAppMasterService extends CompositeService
     bufferServerToken.setService(new Text(service));
     return bufferServerToken;
   }
+  */
 
   /**
    * Check for containers that were allocated in a previous attempt.
