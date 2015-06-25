@@ -17,6 +17,7 @@ package com.datatorrent.bufferserver.server;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.security.SecureRandom;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +52,7 @@ public class ServerTest
   static DefaultEventLoop eventloopServer;
   static DefaultEventLoop eventloopClient;
 
-  static byte[] authToken = "Babababu".getBytes();
+  static byte[] authToken;
 
   @BeforeClass
   public static void setupServerAndClients() throws Exception
@@ -69,6 +70,10 @@ public class ServerTest
     instance = new Server(0, 4096,8);
     address = instance.run(eventloopServer);
     assert (address instanceof InetSocketAddress);
+
+    SecureRandom random = new SecureRandom();
+    authToken = new byte[20];
+    random.nextBytes(authToken);
   }
 
   @AfterClass
@@ -488,7 +493,6 @@ public class ServerTest
   {
     byte[] authToken = ServerTest.authToken.clone();
     authToken[0] = (byte)(authToken[0] + 1);
-    authToken[1] = (byte)(authToken[1] + 1);
 
     bsp = new Publisher("MyPublisher");
     bsp.setToken(authToken);
