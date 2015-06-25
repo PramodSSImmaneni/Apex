@@ -51,6 +51,7 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.yarn.api.ApplicationConstants;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.util.Clock;
@@ -102,6 +103,11 @@ import com.datatorrent.stram.util.MovingAverage.MovingAverageLong;
 import com.datatorrent.stram.util.SharedPubSubWebSocketClient;
 import com.datatorrent.stram.util.WebServicesClient;
 import com.datatorrent.stram.webapp.*;
+
+import net.engio.mbassy.bus.MBassador;
+import net.engio.mbassy.bus.config.BusConfiguration;
+
+import static java.lang.Thread.sleep;
 
 /**
  * Tracks topology provisioning/allocation to containers<p>
@@ -167,6 +173,7 @@ public class StreamingContainerManager implements PlanContext
   private List<AppDataSource> appDataSources = null;
   private final Cache<Long, Object> commandResponse = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.MINUTES).build();
   private long lastLatencyWarningTime;
+  private Random tokenGenerator = new Random();
 
   //logic operator name to a queue of logical customMetrics. this gets cleared periodically
   private final Map<String, Queue<Pair<Long, Map<String, Object>>>> logicalMetrics = Maps.newConcurrentMap();
@@ -199,6 +206,10 @@ public class StreamingContainerManager implements PlanContext
   private final ConcurrentMap<Integer, FSJsonLineFile> operatorFiles = Maps.newConcurrentMap();
 
   private final long startTime = System.currentTimeMillis();
+
+  {
+    tokenGenerator.setSeed(startTime);
+  }
 
   private static class EndWindowStats
   {
@@ -1197,6 +1208,11 @@ public class StreamingContainerManager implements PlanContext
     container.setExternalId(resource.containerId);
     container.host = resource.host;
     container.bufferServerAddress = bufferServerAddr;
+    if (UserGroupInformation.isSecurityEnabled()) {
+      byte[] token = new byte[20];
+      tokenGenerator.nextBytes(token);
+      container.setBufferServerToken(token);
+    }
     container.nodeHttpAddress = resource.nodeHttpAddress;
     container.setAllocatedMemoryMB(resource.memoryMB);
     container.setAllocatedVCores(resource.vCores);
@@ -1225,6 +1241,7 @@ public class StreamingContainerManager implements PlanContext
       StreamingContainerContext scc = new StreamingContainerContext(plan.getLogicalPlan().getAttributes().clone(), null);
       scc.attributes.put(ContainerContext.IDENTIFIER, container.getExternalId());
       scc.attributes.put(ContainerContext.BUFFER_SERVER_MB, bufferServerMemory);
+      scc.attributes.put(ContainerContext.BUFFER_SERVER_TOKEN, container.getBufferServerToken());
       scc.startWindowMillis = this.vars.windowStartMillis;
       return scc;
     }
@@ -1945,6 +1962,7 @@ public class StreamingContainerManager implements PlanContext
   private BufferServerController getBufferServerClient(PTOperator operator)
   {
     BufferServerController bsc = new BufferServerController(operator.getLogicalId());
+    bsc.setToken(operator.getContainer().getBufferServerToken());
     InetSocketAddress address = operator.getContainer().bufferServerAddress;
     StreamingContainer.eventloop.connect(address.isUnresolved() ? new InetSocketAddress(address.getHostName(), address.getPort()) : address, bsc);
     return bsc;

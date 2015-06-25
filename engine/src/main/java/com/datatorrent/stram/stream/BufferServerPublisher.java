@@ -140,6 +140,7 @@ public class BufferServerPublisher extends Publisher implements ByteCounterStrea
   @SuppressWarnings("unchecked")
   public void activate(StreamContext context)
   {
+    setToken(context.get(StreamContext.BUFFER_SERVER_TOKEN));
     InetSocketAddress address = context.getBufferServerAddress();
     eventloop = context.get(StreamContext.EVENT_LOOP);
     eventloop.connect(address.isUnresolved() ? new InetSocketAddress(address.getHostName(), address.getPort()) : address, this);
@@ -151,6 +152,7 @@ public class BufferServerPublisher extends Publisher implements ByteCounterStrea
   @Override
   public void deactivate()
   {
+    setToken(null);
     eventloop.disconnect(this);
   }
 

@@ -83,11 +83,6 @@ public abstract class AuthClient extends AbstractLengthPrependerClient
 
   protected abstract void onAuthMessage(byte[] buffer, int offset, int size);
 
-  public byte[] getToken()
-  {
-    return token;
-  }
-
   public void setToken(byte[] token)
   {
     this.token = token;
@@ -98,8 +93,4 @@ public abstract class AuthClient extends AbstractLengthPrependerClient
     return initiator;
   }
 
-  public void setInitiator(boolean initiator)
-  {
-    this.initiator = initiator;
-  }
 }

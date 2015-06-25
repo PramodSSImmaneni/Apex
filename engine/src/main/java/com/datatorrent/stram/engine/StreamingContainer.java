@@ -185,6 +185,9 @@ public class StreamingContainer extends YarnContainerMain
         }
         // start buffer server, if it was not set externally
         bufferServer = new Server(0, blocksize * 1024 * 1024, blockCount);
+        if (UserGroupInformation.isSecurityEnabled()) {
+          bufferServer.setAuthToken(ctx.getValue(StreamingContainerContext.BUFFER_SERVER_TOKEN));
+        }
         if (ctx.getValue(Context.DAGContext.BUFFER_SPOOLING)) {
           bufferServer.setSpoolStorage(new DiskStorage());
         }
@@ -903,6 +906,7 @@ public class StreamingContainer extends YarnContainerMain
     bssc.put(StreamContext.CODEC, streamCodec);
     bssc.put(StreamContext.EVENT_LOOP, eventloop);
     bssc.setBufferServerAddress(InetSocketAddress.createUnresolved(nodi.bufferServerHost, nodi.bufferServerPort));
+    bssc.put(StreamContext.BUFFER_SERVER_TOKEN, nodi.bufferServerToken);
     if (NetUtils.isLocalAddress(bssc.getBufferServerAddress().getAddress())) {
       bssc.setBufferServerAddress(new InetSocketAddress(InetAddress.getByName(null), nodi.bufferServerPort));
     }
@@ -1097,6 +1101,7 @@ public class StreamingContainer extends YarnContainerMain
             if (NetUtils.isLocalAddress(context.getBufferServerAddress().getAddress())) {
               context.setBufferServerAddress(new InetSocketAddress(InetAddress.getByName(null), nidi.bufferServerPort));
             }
+            context.put(StreamContext.BUFFER_SERVER_TOKEN, nidi.bufferServerToken);
             String connIdentifier = sourceIdentifier + Component.CONCAT_SEPARATOR + streamCodecIdentifier;
             context.setPortId(nidi.portName);
             context.put(StreamContext.CODEC, streamCodec);
