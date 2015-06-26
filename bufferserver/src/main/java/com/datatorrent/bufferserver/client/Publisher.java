@@ -47,7 +47,7 @@ public abstract class Publisher extends AuthClient
    */
   public void activate(String version, long windowId)
   {
-    checkAuthenticate();
+    sendAuthenticate();
     write(PublishRequestTuple.getSerializedRequest(version, id, windowId));
   }
 

@@ -43,14 +43,14 @@ public abstract class Controller extends AuthClient
 
   public void purge(String version, String sourceId, long windowId)
   {
-    checkAuthenticate();
+    sendAuthenticate();
     write(PurgeRequestTuple.getSerializedRequest(version, sourceId, windowId));
     logger.debug("Sent purge request sourceId = {}, windowId = {}", sourceId, Codec.getStringWindowId(windowId));
   }
 
   public void reset(String version, String sourceId, long windowId)
   {
-    checkAuthenticate();
+    sendAuthenticate();
     write(ResetRequestTuple.getSerializedRequest(version, sourceId, windowId));
     logger.debug("Sent reset request sourceId = {}, windowId = {}", sourceId, Codec.getStringWindowId(windowId));
   }

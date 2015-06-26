@@ -45,7 +45,7 @@ public abstract class Subscriber extends AuthClient
 
   public void activate(String version, String type, String sourceId, int mask, Collection<Integer> partitions, long windowId, int bufferSize)
   {
-    checkAuthenticate();
+    sendAuthenticate();
     write(SubscribeRequestTuple.getSerializedRequest(
             version,
             id,

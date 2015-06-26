@@ -23,7 +23,7 @@ public abstract class AuthClient extends AbstractLengthPrependerClient
     super(readbuffer, position, sendBufferSize);
   }
 
-  protected void checkAuthenticate() {
+  protected void sendAuthenticate() {
     if (token != null) {
       write(token);
     }
