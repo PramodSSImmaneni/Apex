@@ -61,6 +61,8 @@ public class Server implements ServerListener
   private final ExecutorService serverHelperExecutor;
   private final ExecutorService storageHelperExecutor;
 
+  private byte[] authToken;
+
   /**
    * @param port - port number to bind to or 0 to auto select a free port
    */
@@ -120,6 +122,11 @@ public class Server implements ServerListener
 
     this.eventloop = eventloop;
     return address;
+  }
+
+  public void setAuthToken(byte[] authToken)
+  {
+    this.authToken = authToken;
   }
 
   /**
@@ -322,7 +329,9 @@ public class Server implements ServerListener
   @Override
   public ClientListener getClientConnection(SocketChannel sc, ServerSocketChannel ssc)
   {
-    return new UnidentifiedClient(sc);
+    UnidentifiedClient client = new UnidentifiedClient(sc);
+    client.setToken(authToken);
+    return client;
   }
 
   @Override
@@ -335,7 +344,7 @@ public class Server implements ServerListener
     throw new RuntimeException(cce);
   }
 
-  class UnidentifiedClient extends AbstractLengthPrependerClient
+  class UnidentifiedClient extends AuthClient
   {
     SocketChannel channel;
     boolean ignore;
@@ -346,7 +355,7 @@ public class Server implements ServerListener
     }
 
     @Override
-    public void onMessage(byte[] buffer, int offset, int size)
+    public void onAuthMessage(byte[] buffer, int offset, int size)
     {
       if (ignore) {
         return;
