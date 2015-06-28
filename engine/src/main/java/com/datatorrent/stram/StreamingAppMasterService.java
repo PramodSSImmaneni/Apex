@@ -80,9 +80,9 @@ import com.datatorrent.stram.plan.logical.LogicalPlan;
 import com.datatorrent.stram.plan.physical.OperatorStatus.PortStatus;
 import com.datatorrent.stram.plan.physical.PTContainer;
 import com.datatorrent.stram.plan.physical.PTOperator;
-import com.datatorrent.stram.security.BufferServerTokenManager;
 import com.datatorrent.stram.security.StramDelegationTokenIdentifier;
 import com.datatorrent.stram.security.StramDelegationTokenManager;
+import com.datatorrent.stram.security.StramUserLogin;
 import com.datatorrent.stram.security.StramWSFilterInitializer;
 import com.datatorrent.stram.webapp.AppInfo;
 import com.datatorrent.stram.webapp.StramWebApp;
@@ -129,7 +129,6 @@ public class StreamingAppMasterService extends CompositeService
   private final ClusterAppStats stats = new ClusterAppStats();
   private StramDelegationTokenManager delegationTokenManager = null;
   private AppDataPushAgent appDataPushAgent;
-  private BufferServerTokenManager bufferServerTokenManager = null;
 
   public StreamingAppMasterService(ApplicationAttemptId appAttemptID)
   {

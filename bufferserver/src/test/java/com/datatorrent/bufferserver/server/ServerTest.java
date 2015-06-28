@@ -336,7 +336,7 @@ public class ServerTest
 
     windowId++;
 
-    bsp.publishMessage(BeginWindowTuple.getSerializedTuple((int) windowId));
+    bsp.publishMessage(BeginWindowTuple.getSerializedTuple((int)windowId));
 
     for (int i = 0; i < 2; i++) {
       byte[] buff = PayloadTuple.getSerializedTuple(0, 1);
@@ -344,7 +344,7 @@ public class ServerTest
       bsp.publishMessage(buff);
     }
 
-    bsp.publishMessage(EndWindowTuple.getSerializedTuple((int) windowId));
+    bsp.publishMessage(EndWindowTuple.getSerializedTuple((int)windowId));
 
     eventloopClient.disconnect(bsp);
 

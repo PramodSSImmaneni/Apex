@@ -311,7 +311,6 @@ public class LaunchContainerRunnable implements Runnable
       String service = heartbeatAddress.getAddress().getHostAddress() + ":" + heartbeatAddress.getPort();
       Token<StramDelegationTokenIdentifier> stramToken = new Token<StramDelegationTokenIdentifier>(identifier, delegationTokenManager);
       stramToken.setService(new Text(service));
-      //return getTokens(ugi, stramToken, null);
       return getTokens(ugi, stramToken);
     }
     return null;
@@ -329,7 +328,6 @@ public class LaunchContainerRunnable implements Runnable
         }
       }
       credentials.addToken(delegationToken.getService(), delegationToken);
-      //credentials.addToken(bufferServerToken.getService(), bufferServerToken);
       DataOutputBuffer dataOutput = new DataOutputBuffer();
       credentials.writeTokenStorageToStream(dataOutput);
       byte[] tokenBytes = dataOutput.getData();
