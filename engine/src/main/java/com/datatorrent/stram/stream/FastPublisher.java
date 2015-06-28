@@ -42,9 +42,8 @@ import static java.lang.Thread.sleep;
 /**
  * <p>FastPublisher class.</p>
  *
- * TODO:- Implement token security Pramod Immaneni <pramod@datatorrent.com>
+ * TODO:- Implement token security
  *
- * @author Chetan Narsude <chetan@datatorrent.com>
  * @since 0.3.2
  */
 public class FastPublisher extends Kryo implements ClientListener, Stream

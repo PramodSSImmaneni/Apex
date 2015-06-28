@@ -26,9 +26,8 @@ import com.datatorrent.stram.engine.StreamContext;
 /**
  * <p>FastSubscriber class.</p>
  *
- * TODO:- Implement token security Pramod Immaneni <pramod@datatorrent.com>
+ * TODO:- Implement token security
  *
- * @author Chetan Narsude <chetan@datatorrent.com>
  * @since 0.3.2
  */
 public class FastSubscriber extends BufferServerSubscriber
