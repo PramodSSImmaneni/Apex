@@ -365,17 +365,9 @@ public class Server implements ServerListener
     }
   }
 
-  class UnidentifiedClient extends AuthClient
+  class UnidentifiedClient extends AbstractLengthPrependerClient
   {
-    //SocketChannel channel;
     boolean ignore;
-
-    /*
-    UnidentifiedClient(SocketChannel channel)
-    {
-      this.channel = channel;
-    }
-    */
 
     @Override
     public void onMessage(byte[] buffer, int offset, int size)
