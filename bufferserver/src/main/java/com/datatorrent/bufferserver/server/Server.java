@@ -37,11 +37,11 @@ import com.datatorrent.bufferserver.internal.LogicalNode;
 import com.datatorrent.bufferserver.packet.*;
 import com.datatorrent.bufferserver.storage.Storage;
 import com.datatorrent.common.util.NameableThreadFactory;
-import com.datatorrent.netlet.util.VarInt;
 import com.datatorrent.netlet.AbstractLengthPrependerClient;
 import com.datatorrent.netlet.DefaultEventLoop;
 import com.datatorrent.netlet.EventLoop;
 import com.datatorrent.netlet.Listener.ServerListener;
+import com.datatorrent.netlet.util.VarInt;
 
 /**
  * The buffer server application<p>
@@ -329,8 +329,14 @@ public class Server implements ServerListener
   @Override
   public ClientListener getClientConnection(SocketChannel sc, ServerSocketChannel ssc)
   {
-    UnidentifiedClient client = new UnidentifiedClient(sc);
-    client.setToken(authToken);
+    ClientListener client;
+    if (authToken == null) {
+      client = new UnidentifiedClient();
+    } else {
+      AuthClient authClient = new AuthClient();
+      authClient.setToken(authToken);
+      client = authClient;
+    }
     return client;
   }
 
@@ -344,18 +350,35 @@ public class Server implements ServerListener
     throw new RuntimeException(cce);
   }
 
+  class AuthClient extends com.datatorrent.bufferserver.client.AuthClient
+  {
+
+    @Override
+    public void onMessage(byte[] buffer, int offset, int size)
+    {
+      authenticateMessage(buffer, offset, size);
+
+      unregistered(key);
+      UnidentifiedClient client = new UnidentifiedClient();
+      key.attach(client);
+      client.registered(key);
+    }
+  }
+
   class UnidentifiedClient extends AuthClient
   {
-    SocketChannel channel;
+    //SocketChannel channel;
     boolean ignore;
 
+    /*
     UnidentifiedClient(SocketChannel channel)
     {
       this.channel = channel;
     }
+    */
 
     @Override
-    public void onAuthMessage(byte[] buffer, int offset, int size)
+    public void onMessage(byte[] buffer, int offset, int size)
     {
       if (ignore) {
         return;

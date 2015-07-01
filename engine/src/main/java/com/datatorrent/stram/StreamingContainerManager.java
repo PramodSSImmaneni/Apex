@@ -15,12 +15,10 @@
  */
 package com.datatorrent.stram;
 
-import com.datatorrent.common.experimental.AppData;
 import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
-import java.security.SecureRandom;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -39,8 +37,12 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
-import net.engio.mbassy.bus.MBassador;
-import net.engio.mbassy.bus.config.BusConfiguration;
+import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -59,13 +61,6 @@ import org.apache.hadoop.yarn.util.Clock;
 import org.apache.hadoop.yarn.util.SystemClock;
 import org.apache.hadoop.yarn.webapp.NotFoundException;
 
-import com.datatorrent.common.util.FSStorageAgent;
-import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.datatorrent.api.*;
 import com.datatorrent.api.Context.OperatorContext;
 import com.datatorrent.api.Operator.InputPort;
@@ -73,9 +68,11 @@ import com.datatorrent.api.Operator.OutputPort;
 import com.datatorrent.api.Stats.OperatorStats;
 import com.datatorrent.api.annotation.Stateless;
 
+import com.datatorrent.bufferserver.auth.AuthManager;
 import com.datatorrent.bufferserver.util.Codec;
-import com.datatorrent.common.util.Pair;
+import com.datatorrent.common.experimental.AppData;
 import com.datatorrent.common.util.FSStorageAgent;
+import com.datatorrent.common.util.Pair;
 import com.datatorrent.stram.Journal.Recoverable;
 import com.datatorrent.stram.StreamingContainerAgent.ContainerStartRequest;
 import com.datatorrent.stram.api.*;
@@ -108,8 +105,6 @@ import com.datatorrent.stram.webapp.*;
 import net.engio.mbassy.bus.MBassador;
 import net.engio.mbassy.bus.config.BusConfiguration;
 
-import static java.lang.Thread.sleep;
-
 /**
  * Tracks topology provisioning/allocation to containers<p>
  * <br>
@@ -134,7 +129,6 @@ public class StreamingContainerManager implements PlanContext
   public final static Recoverable SET_OPERATOR_PROPERTY = new SetOperatorProperty();
   public final static Recoverable SET_PHYSICAL_OPERATOR_PROPERTY = new SetPhysicalOperatorProperty();
   public final static int METRIC_QUEUE_SIZE = 1000;
-  private final static int BUFFER_SERVER_TOKEN_LENGTH = 20;
 
   private final FinalVars vars;
   private final PhysicalPlan plan;
@@ -175,7 +169,6 @@ public class StreamingContainerManager implements PlanContext
   private List<AppDataSource> appDataSources = null;
   private final Cache<Long, Object> commandResponse = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.MINUTES).build();
   private long lastLatencyWarningTime;
-  private SecureRandom bufferServerTokenGenerator = new SecureRandom();
 
   //logic operator name to a queue of logical customMetrics. this gets cleared periodically
   private final Map<String, Queue<Pair<Long, Map<String, Object>>>> logicalMetrics = Maps.newConcurrentMap();
@@ -1207,8 +1200,7 @@ public class StreamingContainerManager implements PlanContext
     container.host = resource.host;
     container.bufferServerAddress = bufferServerAddr;
     if (UserGroupInformation.isSecurityEnabled()) {
-      byte[] token = new byte[BUFFER_SERVER_TOKEN_LENGTH];
-      bufferServerTokenGenerator.nextBytes(token);
+      byte[] token = AuthManager.generateToken();
       container.setBufferServerToken(token);
     }
     container.nodeHttpAddress = resource.nodeHttpAddress;
