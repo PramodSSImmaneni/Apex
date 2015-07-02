@@ -3,7 +3,7 @@ package com.datatorrent.bufferserver.client;
 import com.datatorrent.netlet.AbstractLengthPrependerClient;
 
 /**
- * 
+ *
  */
 public abstract class AuthClient extends AbstractLengthPrependerClient
 {
