@@ -3,7 +3,7 @@ package com.datatorrent.bufferserver.client;
 import com.datatorrent.netlet.AbstractLengthPrependerClient;
 
 /**
- * Created by pramod on 6/25/15.
+ *
  */
 public abstract class AuthClient extends AbstractLengthPrependerClient
 {
@@ -26,6 +26,25 @@ public abstract class AuthClient extends AbstractLengthPrependerClient
   protected void sendAuthenticate() {
     if (token != null) {
       write(token);
+    }
+  }
+
+  protected void authenticateMessage(byte[] buffer, int offset, int size)
+  {
+    if (token != null) {
+      boolean authenticated = false;
+      if (size == token.length) {
+        int match = 0;
+        while ((match < token.length) && (buffer[offset + match] == token[match])) {
+          ++match;
+        }
+        if (match == token.length) {
+          authenticated = true;
+        }
+      }
+      if (!authenticated) {
+        throw new RuntimeException("Authentication failure");
+      }
     }
   }
 
