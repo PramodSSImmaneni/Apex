@@ -352,10 +352,15 @@ public class Server implements ServerListener
 
   class AuthClient extends com.datatorrent.bufferserver.client.AuthClient
   {
+    boolean ignore;
 
     @Override
     public void onMessage(byte[] buffer, int offset, int size)
     {
+      if (ignore) {
+        return;
+      }
+
       authenticateMessage(buffer, offset, size);
 
       unregistered(key);
@@ -368,6 +373,8 @@ public class Server implements ServerListener
       if (len > 0) {
         client.transferBuffer(buffer, readOffset + size, len);
       }
+
+      ignore = true;
     }
   }
 
