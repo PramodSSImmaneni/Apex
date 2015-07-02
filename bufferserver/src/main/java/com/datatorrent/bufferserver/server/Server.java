@@ -361,11 +361,17 @@ public class Server implements ServerListener
       unregistered(key);
       UnidentifiedClient client = new UnidentifiedClient();
       key.attach(client);
+      key.interestOps(SelectionKey.OP_READ);
       client.registered(key);
+
+      int len = writeOffset - readOffset - size;
+      if (len > 0) {
+        client.transferBuffer(buffer, readOffset + size, len);
+      }
     }
   }
 
-  class UnidentifiedClient extends AbstractLengthPrependerClient
+  class UnidentifiedClient extends SeedDataClient
   {
     boolean ignore;
 
@@ -583,7 +589,7 @@ public class Server implements ServerListener
    * this is the end on the server side which handles all the communication.
    *
    */
-  class Publisher extends AbstractLengthPrependerClient
+  class Publisher extends SeedDataClient
   {
     private final DataList datalist;
     boolean dirty;
@@ -592,26 +598,6 @@ public class Server implements ServerListener
     {
       super(dl.getBuffer(windowId), dl.getPosition(), 1024);
       this.datalist = dl;
-    }
-
-    public void transferBuffer(byte[] array, int offset, int len)
-    {
-      int remainingCapacity;
-      do {
-        remainingCapacity = buffer.length - writeOffset;
-        if (len < remainingCapacity) {
-          remainingCapacity = len;
-          byteBuffer.position(writeOffset + remainingCapacity);
-        }
-        else {
-          byteBuffer.position(buffer.length);
-        }
-        System.arraycopy(array, offset, buffer, writeOffset, remainingCapacity);
-        read(remainingCapacity);
-
-        offset += remainingCapacity;
-      }
-      while ((len -= remainingCapacity) > 0);
     }
 
     @Override
@@ -770,6 +756,44 @@ public class Server implements ServerListener
       }
     }
 
+  }
+
+  abstract class SeedDataClient extends AbstractLengthPrependerClient
+  {
+
+    public SeedDataClient()
+    {
+    }
+
+    public SeedDataClient(int readBufferSize, int sendBufferSize)
+    {
+      super(readBufferSize, sendBufferSize);
+    }
+
+    public SeedDataClient(byte[] readbuffer, int position, int sendBufferSize)
+    {
+      super(readbuffer, position, sendBufferSize);
+    }
+
+    public void transferBuffer(byte[] array, int offset, int len)
+    {
+      int remainingCapacity;
+      do {
+        remainingCapacity = buffer.length - writeOffset;
+        if (len < remainingCapacity) {
+          remainingCapacity = len;
+          byteBuffer.position(writeOffset + remainingCapacity);
+        }
+        else {
+          byteBuffer.position(buffer.length);
+        }
+        System.arraycopy(array, offset, buffer, writeOffset, remainingCapacity);
+        read(remainingCapacity);
+
+        offset += remainingCapacity;
+      }
+      while ((len -= remainingCapacity) > 0);
+    }
   }
 
   private static final Logger logger = LoggerFactory.getLogger(Server.class);
