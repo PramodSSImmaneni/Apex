@@ -24,12 +24,15 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.UnknownHostException;
-import java.util.*;
 import java.util.AbstractMap.SimpleEntry;
+import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+
+import net.engio.mbassy.bus.MBassador;
+import net.engio.mbassy.bus.config.BusConfiguration;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,8 +60,8 @@ import com.datatorrent.bufferserver.server.Server;
 import com.datatorrent.bufferserver.storage.DiskStorage;
 import com.datatorrent.bufferserver.util.Codec;
 import com.datatorrent.common.util.ScheduledThreadPoolExecutor;
-import com.datatorrent.netlet.util.Slice;
 import com.datatorrent.netlet.DefaultEventLoop;
+import com.datatorrent.netlet.util.Slice;
 import com.datatorrent.stram.ComponentContextPair;
 import com.datatorrent.stram.RecoverableRpcProxy;
 import com.datatorrent.stram.StramUtils.YarnContainerMain;
@@ -75,9 +78,6 @@ import com.datatorrent.stram.plan.logical.Operators.PortContextPair;
 import com.datatorrent.stram.plan.logical.Operators.PortMappingDescriptor;
 import com.datatorrent.stram.security.StramUserLogin;
 import com.datatorrent.stram.stream.*;
-
-import net.engio.mbassy.bus.MBassador;
-import net.engio.mbassy.bus.config.BusConfiguration;
 
 /**
  * Object which controls the container process launched by {@link com.datatorrent.stram.StreamingAppMaster}.
@@ -185,9 +185,7 @@ public class StreamingContainer extends YarnContainerMain
         }
         // start buffer server, if it was not set externally
         bufferServer = new Server(0, blocksize * 1024 * 1024, blockCount);
-        if (UserGroupInformation.isSecurityEnabled()) {
-          bufferServer.setAuthToken(ctx.getValue(StreamingContainerContext.BUFFER_SERVER_TOKEN));
-        }
+        bufferServer.setAuthToken(ctx.getValue(StreamingContainerContext.BUFFER_SERVER_TOKEN));
         if (ctx.getValue(Context.DAGContext.BUFFER_SPOOLING)) {
           bufferServer.setSpoolStorage(new DiskStorage());
         }
