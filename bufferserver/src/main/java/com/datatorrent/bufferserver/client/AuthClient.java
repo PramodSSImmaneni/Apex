@@ -20,7 +20,7 @@ import java.security.AccessControlException;
 import com.datatorrent.netlet.AbstractLengthPrependerClient;
 
 /**
- * <p></p>Auth Client class.</p>
+ * <p>Auth Client class.</p>
  */
 public abstract class AuthClient extends AbstractLengthPrependerClient
 {
@@ -60,8 +60,7 @@ public abstract class AuthClient extends AbstractLengthPrependerClient
         }
       }
       if (!authenticated) {
-        // Intentionally using a discreet message
-        throw new AccessControlException("Disallowed");
+        throw new AccessControlException("Buffer server security is enabled. Access is restricted without proper credentials");
       }
     }
   }
