@@ -15,6 +15,8 @@
  */
 package com.datatorrent.bufferserver.client;
 
+import java.security.AccessControlException;
+
 import com.datatorrent.netlet.AbstractLengthPrependerClient;
 
 /**
@@ -58,7 +60,8 @@ public abstract class AuthClient extends AbstractLengthPrependerClient
         }
       }
       if (!authenticated) {
-        throw new RuntimeException("Authentication failure");
+        // Intentionally using a discreet message
+        throw new AccessControlException("Disallowed");
       }
     }
   }
