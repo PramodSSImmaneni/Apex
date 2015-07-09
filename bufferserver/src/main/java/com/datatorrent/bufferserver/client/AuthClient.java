@@ -60,7 +60,7 @@ public abstract class AuthClient extends AbstractLengthPrependerClient
         }
       }
       if (!authenticated) {
-        throw new AccessControlException("Buffer server security is enabled. Access is restricted without proper credentials");
+        throw new AccessControlException("Buffer server security is enabled. Access is restricted without proper credentials.");
       }
     }
   }
