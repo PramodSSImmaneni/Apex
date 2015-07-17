@@ -69,15 +69,15 @@ public class StramWSFilterInitializer extends FilterInitializer
   }
 
   // From org.apache.hadoop.yarn.webapp.util.WebAppUtils
-  // Modified to support HA
-  // Replace with HA methods from Hadoop when available
+  // Modified for HA support
+  // Replace with methods from Hadoop when HA support is available
   public static String getResolvedRMWebAppURLWithoutScheme(Configuration conf, String rmId) {
     return getResolvedRMWebAppURLWithoutScheme(conf,
             HttpConfig.isSecure() ? HttpConfig.Policy.HTTPS_ONLY : HttpConfig.Policy.HTTP_ONLY, rmId);
   }
 
   // From org.apache.hadoop.yarn.webapp.util.WebAppUtils
-  // Modified to support HA
+  // Modified for HA support
   public static String getResolvedRMWebAppURLWithoutScheme(Configuration conf,
                                                            HttpConfig.Policy httpPolicy, String rmId) {
     InetSocketAddress address = null;
