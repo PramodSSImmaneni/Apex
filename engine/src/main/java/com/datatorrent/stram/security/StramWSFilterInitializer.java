@@ -15,20 +15,26 @@
  */
 package com.datatorrent.stram.security;
 
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.http.FilterContainer;
 import org.apache.hadoop.http.FilterInitializer;
-import org.apache.hadoop.yarn.api.ApplicationConstants;
+import org.apache.hadoop.http.HttpConfig;
+import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.webapp.util.WebAppUtils;
-
-import java.util.HashMap;
-import java.util.Map;
 
 import com.datatorrent.stram.util.ConfigUtils;
 
 /**
- * Borrowed from org.apache.hadoop.yarn.server.webproxy.amfilter.AmFilterIntializer
+ * Based on org.apache.hadoop.yarn.server.webproxy.amfilter.AmFilterIntializer
  * See https://issues.apache.org/jira/browse/YARN-1517
  *
  * @since 0.9.2
@@ -41,12 +47,68 @@ public class StramWSFilterInitializer extends FilterInitializer
   @Override
   public void initFilter(FilterContainer container, Configuration conf) {
     Map<String, String> params = new HashMap<String, String>();
-    String proxy = WebAppUtils.getProxyHostAndPort(conf);
-    String[] parts = proxy.split(":");
-    params.put(StramWSFilter.PROXY_HOST, parts[0]);
-    params.put(StramWSFilter.PROXY_URI_BASE,
-            ConfigUtils.getSchemePrefix(new YarnConfiguration()) + proxy +
-                    System.getenv(ApplicationConstants.APPLICATION_WEB_PROXY_BASE_ENV));
+    Collection<String> proxies = new ArrayList<String>();
+    if (ConfigUtils.isRMHAEnabled(conf)) {
+      // HA is enabled get all
+      for (String rmId : ConfigUtils.getRMHAIds(conf)) {
+        proxies.add(getResolvedRMWebAppURLWithoutScheme(conf, rmId));
+      }
+    } else {
+      proxies.add(WebAppUtils.getProxyHostAndPort(conf));
+    }
+    StringBuilder proxyBr = new StringBuilder();
+    for (String proxy : proxies) {
+      if (proxyBr.length() != 0) {
+        proxyBr.append(StramWSFilter.PROXY_DELIMITER);
+      }
+      String[] parts = proxy.split(":");
+      proxyBr.append(parts[0]);
+    }
+    params.put(StramWSFilter.PROXY_HOST, proxyBr.toString());
     container.addFilter(FILTER_NAME, FILTER_CLASS, params);
   }
+
+  // From org.apache.hadoop.yarn.webapp.util.WebAppUtils
+  // Modified to support HA
+  // Replace with HA methods from Hadoop when available
+  public static String getResolvedRMWebAppURLWithoutScheme(Configuration conf, String rmId) {
+    return getResolvedRMWebAppURLWithoutScheme(conf,
+            HttpConfig.isSecure() ? HttpConfig.Policy.HTTPS_ONLY : HttpConfig.Policy.HTTP_ONLY, rmId);
+  }
+
+  // From org.apache.hadoop.yarn.webapp.util.WebAppUtils
+  // Modified to support HA
+  public static String getResolvedRMWebAppURLWithoutScheme(Configuration conf,
+                                                           HttpConfig.Policy httpPolicy, String rmId) {
+    InetSocketAddress address = null;
+    if (httpPolicy == HttpConfig.Policy.HTTPS_ONLY) {
+      address =
+              conf.getSocketAddr(YarnConfiguration.RM_WEBAPP_HTTPS_ADDRESS + "." + rmId,
+                      YarnConfiguration.DEFAULT_RM_WEBAPP_HTTPS_ADDRESS,
+                      YarnConfiguration.DEFAULT_RM_WEBAPP_HTTPS_PORT);
+    } else {
+      address =
+              conf.getSocketAddr(YarnConfiguration.RM_WEBAPP_ADDRESS + "." + rmId,
+                      YarnConfiguration.DEFAULT_RM_WEBAPP_ADDRESS,
+                      YarnConfiguration.DEFAULT_RM_WEBAPP_PORT);
+    }
+    address = NetUtils.getConnectAddress(address);
+    StringBuffer sb = new StringBuffer();
+    InetAddress resolved = address.getAddress();
+    if (resolved == null || resolved.isAnyLocalAddress() ||
+            resolved.isLoopbackAddress()) {
+      String lh = address.getHostName();
+      try {
+        lh = InetAddress.getLocalHost().getCanonicalHostName();
+      } catch (UnknownHostException e) {
+        //Ignore and fallback.
+      }
+      sb.append(lh);
+    } else {
+      sb.append(address.getHostName());
+    }
+    sb.append(":").append(address.getPort());
+    return sb.toString();
+  }
+
 }

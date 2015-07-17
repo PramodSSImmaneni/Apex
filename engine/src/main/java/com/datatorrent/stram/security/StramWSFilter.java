@@ -15,17 +15,6 @@
  */
 package com.datatorrent.stram.security;
 
-import com.datatorrent.stram.webapp.WebServices;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.io.Text;
-import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.hadoop.security.token.Token;
-
-import javax.servlet.*;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -35,8 +24,21 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.servlet.*;
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.hadoop.security.token.Token;
+
+import com.datatorrent.stram.webapp.WebServices;
+
 /**
- * Built on org.apache.hadoop.yarn.server.webproxy.amfilter.AmIpFilter
+ * Based on org.apache.hadoop.yarn.server.webproxy.amfilter.AmIpFilter
  * See https://issues.apache.org/jira/browse/YARN-1516
  *
  * @since 0.9.2
@@ -46,7 +48,7 @@ public class StramWSFilter implements Filter
   private static final Log LOG = LogFactory.getLog(StramWSFilter.class);
 
   public static final String PROXY_HOST = "PROXY_HOST";
-  public static final String PROXY_URI_BASE = "PROXY_URI_BASE";
+  public static final String PROXY_DELIMITER = ",";
   //update the proxy IP list about every 5 min
   private static final long updateInterval = 5 * 60 * 1000;
 
@@ -60,7 +62,7 @@ public class StramWSFilter implements Filter
   // This will not be needed once all requests can go through the proxy
   private static final String WEBAPP_PROXY_USER = "proxy-user";
 
-  private String proxyHost;
+  private String[] proxyHosts;
   private Set<String> proxyAddresses = null;
   private long lastUpdate;
 
@@ -71,7 +73,8 @@ public class StramWSFilter implements Filter
 
   @Override
   public void init(FilterConfig conf) throws ServletException {
-    proxyHost = conf.getInitParameter(PROXY_HOST);
+    String proxy = conf.getInitParameter(PROXY_HOST);
+    proxyHosts = proxy.split(PROXY_DELIMITER);
     tokenManager = new StramDelegationTokenManager(DELEGATION_KEY_UPDATE_INTERVAL, DELEGATION_TOKEN_MAX_LIFETIME, DELEGATION_TOKEN_RENEW_INTERVAL, DELEGATION_TOKEN_REMOVER_SCAN_INTERVAL);
     sequenceNumber = new AtomicInteger(0);
     try {
@@ -90,17 +93,19 @@ public class StramWSFilter implements Filter
     long now = System.currentTimeMillis();
     synchronized(this) {
       if(proxyAddresses == null || (lastUpdate + updateInterval) >= now) {
-        try {
-          proxyAddresses = new HashSet<String>();
-          for(InetAddress add : InetAddress.getAllByName(proxyHost)) {
-            if (LOG.isDebugEnabled()) {
-              LOG.debug("proxy address is: " + add.getHostAddress());
+        proxyAddresses = new HashSet<String>();
+        for (String proxyHost : proxyHosts) {
+          try {
+            for (InetAddress add : InetAddress.getAllByName(proxyHost)) {
+              if (LOG.isDebugEnabled()) {
+                LOG.debug("proxy address is: " + add.getHostAddress());
+              }
+              proxyAddresses.add(add.getHostAddress());
             }
-            proxyAddresses.add(add.getHostAddress());
+            lastUpdate = now;
+          } catch (UnknownHostException e) {
+            throw new ServletException("Could not locate " + proxyHost, e);
           }
-          lastUpdate = now;
-        } catch (UnknownHostException e) {
-          throw new ServletException("Could not locate "+proxyHost, e);
         }
       }
       return proxyAddresses;
