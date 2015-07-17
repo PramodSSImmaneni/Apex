@@ -24,12 +24,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.http.FilterContainer;
 import org.apache.hadoop.http.FilterInitializer;
-import org.apache.hadoop.http.HttpConfig;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
-import org.apache.hadoop.yarn.webapp.util.WebAppUtils;
 
 import com.datatorrent.stram.util.ConfigUtils;
 
@@ -53,8 +52,9 @@ public class StramWSFilterInitializer extends FilterInitializer
       for (String rmId : ConfigUtils.getRMHAIds(conf)) {
         proxies.add(getResolvedRMWebAppURLWithoutScheme(conf, rmId));
       }
-    } else {
-      proxies.add(WebAppUtils.getProxyHostAndPort(conf));
+    }
+    if (proxies.isEmpty()) {
+      proxies.add(getProxyHostAndPort(conf));
     }
     StringBuilder proxyBr = new StringBuilder();
     for (String proxy : proxies) {
@@ -69,26 +69,39 @@ public class StramWSFilterInitializer extends FilterInitializer
   }
 
   // From org.apache.hadoop.yarn.webapp.util.WebAppUtils
-  // Modified for HA support
-  // Replace with methods from Hadoop when HA support is available
-  public static String getResolvedRMWebAppURLWithoutScheme(Configuration conf, String rmId) {
-    return getResolvedRMWebAppURLWithoutScheme(conf,
-            HttpConfig.isSecure() ? HttpConfig.Policy.HTTPS_ONLY : HttpConfig.Policy.HTTP_ONLY, rmId);
+  // Reimplementing it as audience for the WebAppUtils is private
+  // Using HA enabled methods below
+  public String getProxyHostAndPort(Configuration conf) {
+    String addr = conf.get(YarnConfiguration.PROXY_ADDRESS);
+    if(addr == null || addr.isEmpty()) {
+      addr = getResolvedRMWebAppURLWithoutScheme(conf, null);
+    }
+    return addr;
   }
 
   // From org.apache.hadoop.yarn.webapp.util.WebAppUtils
   // Modified for HA support
-  public static String getResolvedRMWebAppURLWithoutScheme(Configuration conf,
-                                                           HttpConfig.Policy httpPolicy, String rmId) {
+  // Replace with methods from Hadoop when HA support is available
+  // HttpConfig is not used as it's audience is private as well and it's interface has changed from Hadoop 2.2 to 2.6
+  public String getResolvedRMWebAppURLWithoutScheme(Configuration conf, String rmId) {
+    boolean sslEnabled = conf.getBoolean(
+            CommonConfigurationKeysPublic.HADOOP_SSL_ENABLED_KEY,
+            CommonConfigurationKeysPublic.HADOOP_SSL_ENABLED_DEFAULT);
+    return getResolvedRMWebAppURLWithoutScheme(conf, sslEnabled, (rmId != null) ? "." + rmId : null);
+  }
+
+  // From org.apache.hadoop.yarn.webapp.util.WebAppUtils
+  // Modified for HA support
+  public String getResolvedRMWebAppURLWithoutScheme(Configuration conf, boolean sslEnabled, String rmId) {
     InetSocketAddress address = null;
-    if (httpPolicy == HttpConfig.Policy.HTTPS_ONLY) {
+    if (sslEnabled) {
       address =
-              conf.getSocketAddr(YarnConfiguration.RM_WEBAPP_HTTPS_ADDRESS + "." + rmId,
+              conf.getSocketAddr(YarnConfiguration.RM_WEBAPP_HTTPS_ADDRESS + rmId,
                       YarnConfiguration.DEFAULT_RM_WEBAPP_HTTPS_ADDRESS,
                       YarnConfiguration.DEFAULT_RM_WEBAPP_HTTPS_PORT);
     } else {
       address =
-              conf.getSocketAddr(YarnConfiguration.RM_WEBAPP_ADDRESS + "." + rmId,
+              conf.getSocketAddr(YarnConfiguration.RM_WEBAPP_ADDRESS + rmId,
                       YarnConfiguration.DEFAULT_RM_WEBAPP_ADDRESS,
                       YarnConfiguration.DEFAULT_RM_WEBAPP_PORT);
     }
