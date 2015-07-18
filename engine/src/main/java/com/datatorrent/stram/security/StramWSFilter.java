@@ -29,8 +29,9 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.token.Token;
@@ -45,7 +46,7 @@ import com.datatorrent.stram.webapp.WebServices;
  */
 public class StramWSFilter implements Filter
 {
-  private static final Log LOG = LogFactory.getLog(StramWSFilter.class);
+  private static final Logger logger = LoggerFactory.getLogger(StramWSFilter.class);
 
   public static final String PROXY_HOST = "PROXY_HOST";
   public static final String PROXY_DELIMITER = ",";
@@ -72,7 +73,8 @@ public class StramWSFilter implements Filter
   private String loginUser;
 
   @Override
-  public void init(FilterConfig conf) throws ServletException {
+  public void init(FilterConfig conf) throws ServletException
+  {
     String proxy = conf.getInitParameter(PROXY_HOST);
     proxyHosts = proxy.split(PROXY_DELIMITER);
     tokenManager = new StramDelegationTokenManager(DELEGATION_KEY_UPDATE_INTERVAL, DELEGATION_TOKEN_MAX_LIFETIME, DELEGATION_TOKEN_RENEW_INTERVAL, DELEGATION_TOKEN_REMOVER_SCAN_INTERVAL);
@@ -89,7 +91,8 @@ public class StramWSFilter implements Filter
   }
 
   @SuppressWarnings("ReturnOfCollectionOrArrayField")
-  protected Set<String> getProxyAddresses() throws ServletException {
+  protected Set<String> getProxyAddresses() throws ServletException
+  {
     long now = System.currentTimeMillis();
     synchronized(this) {
       if(proxyAddresses == null || (lastUpdate + updateInterval) >= now) {
@@ -97,9 +100,7 @@ public class StramWSFilter implements Filter
         for (String proxyHost : proxyHosts) {
           try {
             for (InetAddress add : InetAddress.getAllByName(proxyHost)) {
-              if (LOG.isDebugEnabled()) {
-                LOG.debug("proxy address is: " + add.getHostAddress());
-              }
+              logger.debug("proxy address is: {}", add.getHostAddress());
               proxyAddresses.add(add.getHostAddress());
             }
             lastUpdate = now;
@@ -113,27 +114,25 @@ public class StramWSFilter implements Filter
   }
 
   @Override
-  public void destroy() {
+  public void destroy()
+  {
     //Empty
     tokenManager.stopThreads();
   }
 
   @Override
   public void doFilter(ServletRequest req, ServletResponse resp,
-                       FilterChain chain) throws IOException, ServletException {
+                       FilterChain chain) throws IOException, ServletException
+  {
     if(!(req instanceof HttpServletRequest)) {
       throw new ServletException("This filter only works for HTTP/HTTPS");
     }
 
     HttpServletRequest httpReq = (HttpServletRequest)req;
     HttpServletResponse httpResp = (HttpServletResponse)resp;
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("Remote address for request is: " + httpReq.getRemoteAddr());
-    }
+    logger.debug("Remote address for request is: {}", httpReq.getRemoteAddr());
     String requestURI = httpReq.getRequestURI();
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("Request path " + requestURI);
-    }
+    logger.debug("Request path {}", requestURI);
     boolean authenticate = true;
     String user = null;
     if(getProxyAddresses().contains(httpReq.getRemoteAddr())) {
@@ -147,9 +146,7 @@ public class StramWSFilter implements Filter
       }
       if (requestURI.equals(WebServices.PATH) && (user != null)) {
         String token = createClientToken(user, httpReq.getLocalAddr());
-        if (LOG.isDebugEnabled()) {
-          LOG.debug("Create token " + token);
-        }
+        logger.debug("Create token {}", token);
         Cookie cookie = new Cookie(CLIENT_COOKIE, token);
         httpResp.addCookie(cookie);
       }
@@ -167,14 +164,10 @@ public class StramWSFilter implements Filter
       }
       boolean valid = false;
       if (cookie != null) {
-        if (LOG.isDebugEnabled()) {
-          LOG.debug("Verifying token " + cookie.getValue());
-        }
+        logger.debug("Verifying token {}", cookie.getValue());
         user = verifyClientToken(cookie.getValue());
         valid = true;
-        if (LOG.isDebugEnabled()) {
-          LOG.debug("Token valid");
-        }
+        logger.debug("Token valid");
       }
       if (!valid) {
         httpResp.sendError(HttpServletResponse.SC_UNAUTHORIZED);
@@ -183,8 +176,7 @@ public class StramWSFilter implements Filter
     }
 
     if(user == null) {
-      LOG.warn("Could not find "+WEBAPP_PROXY_USER
-              +" cookie, so user will not be set");
+      logger.debug("Could not find {} cookie, so user will not be set", WEBAPP_PROXY_USER);
       chain.doFilter(req, resp);
     } else {
       final StramWSPrincipal principal = new StramWSPrincipal(user);

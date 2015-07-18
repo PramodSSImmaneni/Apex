@@ -44,7 +44,8 @@ public class StramWSFilterInitializer extends FilterInitializer
   private static final String FILTER_CLASS = StramWSFilter.class.getCanonicalName();
 
   @Override
-  public void initFilter(FilterContainer container, Configuration conf) {
+  public void initFilter(FilterContainer container, Configuration conf)
+  {
     Map<String, String> params = new HashMap<String, String>();
     Collection<String> proxies = new ArrayList<String>();
     if (ConfigUtils.isRMHAEnabled(conf)) {
@@ -68,21 +69,26 @@ public class StramWSFilterInitializer extends FilterInitializer
     container.addFilter(FILTER_NAME, FILTER_CLASS, params);
   }
 
-  // From org.apache.hadoop.yarn.webapp.util.WebAppUtils
-  // Reimplementing it as audience for the WebAppUtils is private
-  // Using HA enabled methods below
-  public String getProxyHostAndPort(Configuration conf) {
+  /*
+    From org.apache.hadoop.yarn.webapp.util.WebAppUtils
+    Reimplementing it as audience for the WebAppUtils is private
+    Using HA enabled methods below
+  */
+  public String getProxyHostAndPort(Configuration conf)
+  {
     String addr = conf.get(YarnConfiguration.PROXY_ADDRESS);
-    if(addr == null || addr.isEmpty()) {
+    if (addr == null || addr.isEmpty()) {
       addr = getResolvedRMWebAppURLWithoutScheme(conf, null);
     }
     return addr;
   }
 
-  // From org.apache.hadoop.yarn.webapp.util.WebAppUtils
-  // Modified for HA support
-  // Replace with methods from Hadoop when HA support is available
-  // HttpConfig is not used as it's audience is private as well and it's interface has changed from Hadoop 2.2 to 2.6
+  /*
+    From org.apache.hadoop.yarn.webapp.util.WebAppUtils
+    Modified for HA support
+    Replace with methods from Hadoop when HA support is available
+    HttpConfig is not used as it's audience is private as well and it's interface has changed from Hadoop 2.2 to 2.6
+  */
   public String getResolvedRMWebAppURLWithoutScheme(Configuration conf, String rmId) {
     boolean sslEnabled = conf.getBoolean(
             CommonConfigurationKeysPublic.HADOOP_SSL_ENABLED_KEY,
@@ -90,9 +96,12 @@ public class StramWSFilterInitializer extends FilterInitializer
     return getResolvedRMWebAppURLWithoutScheme(conf, sslEnabled, (rmId != null) ? "." + rmId : null);
   }
 
-  // From org.apache.hadoop.yarn.webapp.util.WebAppUtils
-  // Modified for HA support
-  public String getResolvedRMWebAppURLWithoutScheme(Configuration conf, boolean sslEnabled, String rmId) {
+  /*
+    From org.apache.hadoop.yarn.webapp.util.WebAppUtils
+    Modified for HA support
+  */
+  public String getResolvedRMWebAppURLWithoutScheme(Configuration conf, boolean sslEnabled, String rmId)
+  {
     InetSocketAddress address = null;
     if (sslEnabled) {
       address =

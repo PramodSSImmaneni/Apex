@@ -148,11 +148,13 @@ public class ConfigUtils
     return null;
   }
 
-  public static boolean isRMHAEnabled(Configuration conf) {
+  public static boolean isRMHAEnabled(Configuration conf)
+  {
     return conf.getBoolean(RM_HA_ENABLED, DEFAULT_RM_HA_ENABLED);
   }
 
-  public static Collection<String> getRMHAIds(Configuration conf) {
+  public static Collection<String> getRMHAIds(Configuration conf)
+  {
     return conf.getStringCollection(RM_HA_IDS);
   }
 
