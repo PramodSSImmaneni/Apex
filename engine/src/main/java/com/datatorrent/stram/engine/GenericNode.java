@@ -550,7 +550,7 @@ public class GenericNode extends Node<Operator>
       }
     }
 
-    if (insideWindow && !alive) {
+    if (insideWindow && alive) {
       endWindowEmitTime = System.currentTimeMillis();
       operator.endWindow();
       if (++applicationWindowCount == APPLICATION_WINDOW_COUNT) {
