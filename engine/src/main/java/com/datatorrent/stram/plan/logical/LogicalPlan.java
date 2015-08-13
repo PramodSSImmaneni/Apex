@@ -26,14 +26,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.validation.*;
 import javax.validation.constraints.NotNull;
 
+import com.google.common.collect.Sets;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.Sets;
 
 import com.datatorrent.api.*;
 import com.datatorrent.api.Attribute.AttributeMap.DefaultAttributeMap;
@@ -791,6 +792,11 @@ public class LogicalPlan implements Serializable, DAG
     public Operator getOperator()
     {
       return operator;
+    }
+
+    @Override
+    public OperatorAnnotation getOperatorAnnotation() {
+      return operatorAnnotation;
     }
 
     public LogicalPlan getDAG()

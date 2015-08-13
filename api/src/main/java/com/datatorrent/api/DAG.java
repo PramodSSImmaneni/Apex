@@ -18,6 +18,7 @@ package com.datatorrent.api;
 import java.io.Serializable;
 
 import com.datatorrent.api.Context.DAGContext;
+import com.datatorrent.api.annotation.OperatorAnnotation;
 
 /**
  * DAG contains the logical declarations of operators and streams.
@@ -116,6 +117,8 @@ public interface DAG extends DAGContext, Serializable
     public String getName();
 
     public Operator getOperator();
+
+    public OperatorAnnotation getOperatorAnnotation();
 
     public InputPortMeta getMeta(Operator.InputPort<?> port);
 

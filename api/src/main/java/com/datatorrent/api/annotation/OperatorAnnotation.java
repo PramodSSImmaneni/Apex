@@ -46,4 +46,8 @@ public @interface OperatorAnnotation
    * @return whether operator can be checkpointed in middle of an application window.
    */
   public boolean checkpointableWithinAppWindow() default true;
+
+  public boolean idempotent() default true;
+
+  public boolean requireIdempotency() default false;
 }

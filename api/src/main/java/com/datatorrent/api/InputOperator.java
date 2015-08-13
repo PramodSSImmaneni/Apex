@@ -15,6 +15,8 @@
  */
 package com.datatorrent.api;
 
+import com.datatorrent.api.annotation.OperatorAnnotation;
+
 /**
  * Input operators ie operators which do not consume payload from other operators but are able
  * to generate the payload for other operators must implement this interface.
@@ -24,6 +26,7 @@ package com.datatorrent.api;
  *
  * @since 0.3.2
  */
+@OperatorAnnotation(idempotent = false)
 public interface InputOperator extends Operator
 {
   /**

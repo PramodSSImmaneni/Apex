@@ -71,6 +71,7 @@ import com.datatorrent.api.Context.OperatorContext;
 import com.datatorrent.api.Operator.InputPort;
 import com.datatorrent.api.Operator.OutputPort;
 import com.datatorrent.api.Stats.OperatorStats;
+import com.datatorrent.api.annotation.OperatorAnnotation;
 import com.datatorrent.api.annotation.Stateless;
 
 import com.datatorrent.bufferserver.auth.AuthManager;
@@ -698,6 +699,7 @@ public class StreamingContainerManager implements PlanContext
     processEvents();
 
     committedWindowId = updateCheckpoints(false);
+    LOG.info("COMMITTED WINDOW {}" + committedWindowId);
     calculateEndWindowStats();
     if (this.vars.enableStatsRecording) {
       recordStats(currentTms);
@@ -1848,6 +1850,9 @@ public class StreamingContainerManager implements PlanContext
    */
   public void updateRecoveryCheckpoints(PTOperator operator, UpdateCheckpointsContext ctx)
   {
+    OperatorAnnotation annotation = operator.getOperatorMeta().getOperatorAnnotation();
+    boolean idempotent = annotation.idempotent();
+
     if (operator.getRecoveryCheckpoint().windowId < ctx.committedWindowId.longValue()) {
       ctx.committedWindowId.setValue(operator.getRecoveryCheckpoint().windowId);
     }
