@@ -1851,7 +1851,10 @@ public class StreamingContainerManager implements PlanContext
   public void updateRecoveryCheckpoints(PTOperator operator, UpdateCheckpointsContext ctx)
   {
     OperatorAnnotation annotation = operator.getOperatorMeta().getOperatorAnnotation();
-    boolean idempotent = annotation.idempotent();
+    boolean idempotent = false;
+    if (annotation != null) {
+      idempotent = annotation.idempotent();
+    }
 
     if (operator.getRecoveryCheckpoint().windowId < ctx.committedWindowId.longValue()) {
       ctx.committedWindowId.setValue(operator.getRecoveryCheckpoint().windowId);
