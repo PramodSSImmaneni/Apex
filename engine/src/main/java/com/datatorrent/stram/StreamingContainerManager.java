@@ -699,7 +699,7 @@ public class StreamingContainerManager implements PlanContext
     processEvents();
 
     committedWindowId = updateCheckpoints(false);
-    LOG.info("COMMITTED WINDOW {}" + committedWindowId);
+    LOG.info("COMMITTED WINDOW {}", committedWindowId);
     calculateEndWindowStats();
     if (this.vars.enableStatsRecording) {
       recordStats(currentTms);
